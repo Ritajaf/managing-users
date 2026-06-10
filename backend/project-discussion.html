@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Discussion — NestJS Auth API</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --pink: #e84393;
+      --green: #059669;
+      --blue: #2563eb;
+      --orange: #d97706;
+      --dark: #1e1e2e;
+      --muted: #64748b;
+      --bg: #f8f7ff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+      line-height: 1.75;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 32px;
+      height: 52px;
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all .15s;
+    }
+    nav a:hover { background: var(--purple-light); color: var(--purple); }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #1e1e2e 0%, #3b1d6b 55%, #7c2d8a 100%);
+      color: white;
+      padding: 72px 48px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(232,67,147,.3), transparent 70%);
+      top: -100px; right: -100px;
+      border-radius: 50%;
+    }
+    .hero-label {
+      display: inline-block;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      margin-bottom: 20px;
+    }
+    .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.2; max-width: 640px; }
+    .hero p  { margin-top: 16px; opacity: .8; font-size: 1.05rem; max-width: 560px; }
+    .tags { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 16px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* ── LAYOUT ── */
+    main { max-width: 980px; margin: 0 auto; padding: 56px 28px 100px; }
+
+    /* ── SECTIONS ── */
+    .section { margin-bottom: 72px; }
+
+    h2 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--purple);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--purple-light);
+    }
+    .h2-num {
+      background: var(--purple);
+      color: white;
+      font-size: 0.78rem;
+      font-weight: 800;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 28px 0 10px; color: var(--dark); }
+
+    p { margin-bottom: 14px; color: #334155; }
+
+    /* ── CARDS ── */
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      border-left: 4px solid var(--purple);
+    }
+    .card.pink   { border-left-color: var(--pink); }
+    .card.green  { border-left-color: var(--green); }
+    .card.blue   { border-left-color: var(--blue); }
+    .card.orange { border-left-color: var(--orange); }
+    .card.dark   { border-left-color: #334155; }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .file-pill {
+      font-family: monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--purple-light);
+      color: var(--purple);
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+    .file-pill.pink   { background: #fce7f3; color: var(--pink); }
+    .file-pill.green  { background: #d1fae5; color: var(--green); }
+    .file-pill.blue   { background: #dbeafe; color: var(--blue); }
+    .file-pill.orange { background: #fef3c7; color: var(--orange); }
+
+    /* ── CODE ── */
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 12px;
+      padding: 22px 24px;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.7;
+      margin: 14px 0 22px;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89b4fa; }
+    .str { color: #a6e3a1; }
+    .cm  { color: #585b70; font-style: italic; }
+    .dec { color: #fab387; }
+    .cls { color: #f9e2af; }
+    .num { color: #fab387; }
+
+    /* ── TABLES ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      margin: 16px 0 28px;
+      font-size: 0.87rem;
+    }
+    th {
+      background: var(--purple);
+      color: white;
+      padding: 13px 18px;
+      text-align: left;
+      font-weight: 700;
+    }
+    td {
+      padding: 12px 18px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+      color: #334155;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #faf5ff; }
+    td code {
+      background: var(--purple-light);
+      color: var(--purple);
+      font-family: monospace;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+    }
+
+    /* ── FLOW ── */
+    .flow-wrap { overflow-x: auto; padding: 8px 0 16px; }
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-width: max-content;
+    }
+    .flow-box {
+      background: white;
+      border: 2px solid #ddd6fe;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--purple);
+      text-align: center;
+      min-width: 120px;
+    }
+    .flow-box.pink  { border-color: #fbcfe8; color: var(--pink); }
+    .flow-box.green { border-color: #a7f3d0; color: var(--green); }
+    .flow-box.red   { border-color: #fca5a5; color: #dc2626; }
+    .flow-box small { display: block; font-weight: 400; color: var(--muted); font-size: 0.73rem; margin-top: 2px; }
+    .arrow { color: #a78bfa; font-size: 1.3rem; padding: 0 6px; flex-shrink: 0; }
+    .arrow.red { color: #f87171; }
+
+    /* ── CONCEPT GRID ── */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .concept-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    }
+    .concept-icon {
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+    }
+    .concept-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .concept-card p  { font-size: 0.84rem; color: var(--muted); margin: 0; }
+
+    /* ── NEXT STEPS ── */
+    .step-list { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+    .step {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .step-num {
+      min-width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: white;
+      font-weight: 800;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .step p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+
+    /* ── METHOD BADGES ── */
+    .method {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 2px 9px;
+      border-radius: 5px;
+      margin-right: 6px;
+    }
+    .post { background: #dcfce7; color: #166534; }
+    .get  { background: #dbeafe; color: #1e40af; }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight {
+      background: linear-gradient(135deg, var(--purple-light), #fce7f3);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      border: 1px solid #ddd6fe;
+    }
+    .highlight strong { color: var(--purple); }
+
+    .warn {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.87rem;
+      color: #92400e;
+      margin: 14px 0;
+    }
+
+    /* ── ARCHITECTURE DIAGRAM ── */
+    .arch {
+      background: white;
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      margin: 20px 0;
+      text-align: center;
+    }
+    .arch-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .arch-box {
+      background: var(--purple-light);
+      border: 2px solid #c4b5fd;
+      color: var(--purple);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 10px 20px;
+      border-radius: 10px;
+      min-width: 120px;
+    }
+    .arch-box.ext {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: var(--green);
+    }
+    .arch-box.db {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: var(--blue);
+    }
+    .arch-arrow {
+      color: #94a3b8;
+      font-size: 1.5rem;
+    }
+    .arch-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin: 6px 0 2px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 36px;
+      font-size: 0.82rem;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#stack">Tech Stack</a>
+  <a href="#concepts">Concepts</a>
+  <a href="#structure">Structure</a>
+  <a href="#files">Files</a>
+  <a href="#flow">Flow</a>
+  <a href="#endpoints">Endpoints</a>
+  <a href="#security">Security</a>
+  <a href="#next">Next Steps</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">Project Discussion</div>
+  <h1>NestJS Authentication API</h1>
+  <p>A backend REST API with user registration, login, JWT-based authentication, and MySQL persistence — built with NestJS and TypeORM.</p>
+  <div class="tags">
+    <span class="tag">NestJS 11</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag">TypeORM</span>
+    <span class="tag">MySQL</span>
+    <span class="tag">JWT</span>
+    <span class="tag">bcrypt</span>
+    <span class="tag">class-validator</span>
+    <span class="tag">@nestjs/config</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- ═══════════════════════════════════════════ 1. OVERVIEW -->
+  <div class="section" id="overview">
+    <h2><span class="h2-num">1</span> Project Overview</h2>
+    <p>
+      This project is a <strong>backend authentication API</strong> — the server-side foundation for any application
+      that needs user accounts. It handles everything from accepting a registration request to issuing a secure token
+      that proves a user is logged in.
+    </p>
+    <p>
+      The project is part of a larger full-stack application (cities project). The <code>backend/</code> folder contains
+      all server code. A <code>frontend/</code> folder exists and will be connected once the backend is complete.
+    </p>
+
+    <div class="arch">
+      <div class="arch-label">Client</div>
+      <div class="arch-row">
+        <div class="arch-box ext">Browser / Frontend</div>
+      </div>
+      <div class="arch-row"><div class="arch-arrow">↕</div></div>
+      <div class="arch-label">NestJS Backend (port 3000)</div>
+      <div class="arch-row">
+        <div class="arch-box">Controller</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box">Service</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box">Repository</div>
+      </div>
+      <div class="arch-row"><div class="arch-arrow">↕</div></div>
+      <div class="arch-label">Database</div>
+      <div class="arch-row">
+        <div class="arch-box db">MySQL — auth_db</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 2. TECH STACK -->
+  <div class="section" id="stack">
+    <h2><span class="h2-num">2</span> Technology Stack</h2>
+
+    <table>
+      <tr><th>Technology</th><th>Role</th><th>Why it was chosen</th></tr>
+      <tr>
+        <td><strong>NestJS</strong></td>
+        <td>Backend framework</td>
+        <td>TypeScript-first, modular structure, built-in DI (dependency injection), widely used in industry</td>
+      </tr>
+      <tr>
+        <td><strong>TypeORM</strong></td>
+        <td>ORM (Object Relational Mapper)</td>
+        <td>Write TypeScript classes instead of raw SQL; auto-creates tables via decorators</td>
+      </tr>
+      <tr>
+        <td><strong>MySQL</strong></td>
+        <td>Relational database</td>
+        <td>Stores user records persistently; enforces constraints like UNIQUE email</td>
+      </tr>
+      <tr>
+        <td><strong>bcrypt</strong></td>
+        <td>Password hashing</td>
+        <td>Industry-standard one-way hash; makes stored passwords unreadable even if DB is leaked</td>
+      </tr>
+      <tr>
+        <td><strong>@nestjs/jwt</strong></td>
+        <td>Token generation &amp; verification</td>
+        <td>Issues signed JWT tokens at login; verifies them on protected routes</td>
+      </tr>
+      <tr>
+        <td><strong>class-validator</strong></td>
+        <td>Input validation</td>
+        <td>Rejects invalid request bodies before they reach business logic</td>
+      </tr>
+      <tr>
+        <td><strong>@nestjs/config</strong></td>
+        <td>Environment variables</td>
+        <td>Reads secrets (JWT key, DB password) from <code>.env</code> so they are never hardcoded</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 3. CONCEPTS -->
+  <div class="section" id="concepts">
+    <h2><span class="h2-num">3</span> Key Concepts Covered</h2>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="concept-icon">🧩</div>
+        <h4>Modular Architecture</h4>
+        <p>NestJS organises code into <strong>Modules</strong>. Each module owns its own controllers, services, and providers. The root <code>AppModule</code> imports feature modules like <code>AuthModule</code>.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🔀</div>
+        <h4>Dependency Injection (DI)</h4>
+        <p>NestJS automatically creates and injects class instances (e.g. <code>AuthService</code> into <code>AuthController</code>). You declare what you need in the constructor; the framework supplies it.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🗄️</div>
+        <h4>ORM & Entities</h4>
+        <p>TypeORM maps a TypeScript class (<code>User</code>) to a MySQL table (<code>users</code>). Decorators like <code>@Column()</code> define each field. No raw SQL needed.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">✅</div>
+        <h4>DTO Validation</h4>
+        <p>Data Transfer Objects (DTOs) define what shape incoming data must have. The <code>ValidationPipe</code> rejects requests that don't match before they reach the service.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🔐</div>
+        <h4>Password Hashing</h4>
+        <p>Passwords are never stored as plain text. <code>bcrypt.hashSync()</code> turns a password into an irreversible hash. <code>bcrypt.compareSync()</code> checks it at login without ever decrypting it.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🪙</div>
+        <h4>JWT (Stateless Auth)</h4>
+        <p>After login, the server signs a token containing the user's ID. The client sends it on every request. The server verifies the signature — no session storage needed.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🛡️</div>
+        <h4>Guards</h4>
+        <p>A Guard intercepts a request before it reaches the controller and decides whether to allow it. The <code>JwtGuard</code> blocks any request without a valid token.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🌍</div>
+        <h4>Environment Variables</h4>
+        <p>Secrets like the JWT key live in a <code>.env</code> file that is never committed to git. <code>ConfigService</code> reads them safely at runtime.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🏷️</div>
+        <h4>TypeScript Decorators</h4>
+        <p>The <code>@</code> syntax (e.g. <code>@Injectable()</code>, <code>@Entity()</code>) adds metadata to classes and properties. NestJS and TypeORM read this metadata at runtime to wire everything together.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 4. STRUCTURE -->
+  <div class="section" id="structure">
+    <h2><span class="h2-num">4</span> Project Structure</h2>
+    <pre>
+backend/
+├── src/
+│   ├── <span class="cls">main.ts</span>                    <span class="cm">← entry point, starts the HTTP server</span>
+│   ├── <span class="cls">app.module.ts</span>              <span class="cm">← root module, connects DB + feature modules</span>
+│   └── auth/                      <span class="cm">← authentication feature</span>
+│       ├── <span class="cls">auth.module.ts</span>         <span class="cm">← wires together auth pieces + JWT</span>
+│       ├── <span class="cls">auth.controller.ts</span>     <span class="cm">← defines HTTP routes (register, login, me)</span>
+│       ├── <span class="cls">auth.service.ts</span>        <span class="cm">← all business logic lives here</span>
+│       ├── dto/
+│       │   ├── <span class="cls">create-user.dto.ts</span> <span class="cm">← shape + rules for register body</span>
+│       │   └── <span class="cls">login.dto.ts</span>       <span class="cm">← shape + rules for login body</span>
+│       ├── entities/
+│       │   └── <span class="cls">user.entity.ts</span>     <span class="cm">← maps to the MySQL `users` table</span>
+│       └── guards/
+│           └── <span class="cls">jwt.guard.ts</span>       <span class="cm">← blocks requests without a valid JWT</span>
+├── <span class="str">.env</span>                           <span class="cm">← secrets (never committed to git)</span>
+├── <span class="cls">tsconfig.json</span>                  <span class="cm">← TypeScript compiler settings</span>
+└── <span class="cls">package.json</span>                   <span class="cm">← dependencies</span></pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 5. FILES -->
+  <div class="section" id="files">
+    <h2><span class="h2-num">5</span> File-by-File Walkthrough</h2>
+
+    <!-- tsconfig -->
+    <div class="card orange">
+      <div class="card-title"><span class="file-pill orange">tsconfig.json</span> TypeScript Configuration</div>
+      <p>Two settings are mandatory for NestJS and TypeORM decorators to work. Without them every <code>@Column()</code>, <code>@Injectable()</code> etc. throws a <em>ts(1240)</em> error. The module must be <code>commonjs</code>, not <code>nodenext</code>.</p>
+    </div>
+    <pre>
+<span class="str">"experimentalDecorators"</span>: <span class="kw">true</span>,  <span class="cm">// enables @Decorator() syntax</span>
+<span class="str">"emitDecoratorMetadata"</span>: <span class="kw">true</span>,   <span class="cm">// TypeORM reads column types at runtime</span>
+<span class="str">"module"</span>: <span class="str">"commonjs"</span>              <span class="cm">// NestJS requires CommonJS — NOT "nodenext"</span></pre>
+
+    <!-- main.ts -->
+    <div class="card blue">
+      <div class="card-title"><span class="file-pill blue">main.ts</span> Application Entry Point</div>
+      <p>Boots the NestJS app and registers the global <strong>ValidationPipe</strong>. <code>whitelist: true</code> strips unknown fields from request bodies. <code>transform: true</code> converts raw JSON into typed DTO instances so decorators can run.</p>
+    </div>
+    <pre>
+<span class="kw">async function</span> <span class="fn">bootstrap</span>() {
+  <span class="kw">const</span> app = <span class="kw">await</span> <span class="cls">NestFactory</span>.<span class="fn">create</span>(<span class="cls">AppModule</span>);
+  app.<span class="fn">useGlobalPipes</span>(<span class="kw">new</span> <span class="cls">ValidationPipe</span>({
+    whitelist: <span class="kw">true</span>,   <span class="cm">// strips fields not declared in the DTO</span>
+    transform: <span class="kw">true</span>,   <span class="cm">// turns plain JSON into a typed class instance</span>
+  }));
+  <span class="kw">await</span> app.<span class="fn">listen</span>(<span class="num">3000</span>);
+}</pre>
+
+    <!-- app.module -->
+    <div class="card">
+      <div class="card-title"><span class="file-pill">app.module.ts</span> Root Module</div>
+      <p>Loads <code>.env</code> globally, connects TypeORM to MySQL, and imports <code>AuthModule</code>. <code>synchronize: true</code> auto-creates the <code>users</code> table if it does not exist — it does <strong>not</strong> drop existing data on restart.</p>
+    </div>
+    <pre>
+<span class="cls">ConfigModule</span>.forRoot({ isGlobal: <span class="kw">true</span> }),   <span class="cm">// .env available everywhere</span>
+<span class="cls">TypeOrmModule</span>.forRoot({
+  type: <span class="str">'mysql'</span>, host: <span class="str">'localhost'</span>, port: <span class="num">3306</span>,
+  database: <span class="str">'auth_db'</span>,
+  entities: [<span class="cls">User</span>],         <span class="cm">// every entity must be listed here</span>
+  synchronize: <span class="kw">true</span>,         <span class="cm">// creates table on first run; safe for dev</span>
+})</pre>
+
+    <!-- user.entity -->
+    <div class="card green">
+      <div class="card-title"><span class="file-pill green">user.entity.ts</span> Database Table Definition</div>
+      <p>A plain TypeScript class decorated to become a MySQL table. TypeORM reads the decorators and creates exactly this schema. The <code>unique: true</code> constraint is enforced at the database level, not just application level.</p>
+    </div>
+    <pre>
+<span class="dec">@Entity('users')</span>
+<span class="kw">export class</span> <span class="cls">User</span> {
+  <span class="dec">@PrimaryGeneratedColumn()</span>     id!: <span class="kw">number</span>;    <span class="cm">// AUTO_INCREMENT</span>
+  <span class="dec">@Column({ unique: true })</span>     email!: <span class="kw">string</span>; <span class="cm">// DB-level UNIQUE</span>
+  <span class="dec">@Column({ type: 'varchar' })</span>  password!: <span class="kw">string</span>; <span class="cm">// stores hash only</span>
+  <span class="dec">@Column({ type: 'varchar' })</span>  firstName!: <span class="kw">string</span>;
+  <span class="dec">@Column({ type: 'varchar' })</span>  lastName!: <span class="kw">string</span>;
+}</pre>
+
+    <!-- DTOs -->
+    <div class="card pink">
+      <div class="card-title"><span class="file-pill pink">create-user.dto.ts &amp; login.dto.ts</span> Input Validation</div>
+      <p>DTOs are <em>not</em> database entities. They only define what a valid HTTP request body looks like. The <code>ValidationPipe</code> in <code>main.ts</code> reads their decorators and automatically returns <code>400 Bad Request</code> if validation fails — before the service is ever called.</p>
+    </div>
+    <pre>
+<span class="cm">// create-user.dto.ts</span>
+<span class="kw">export class</span> <span class="cls">CreateUserDto</span> {
+  <span class="dec">@IsEmail()</span>                     email!: <span class="kw">string</span>;
+  <span class="dec">@IsString() @MinLength(6)</span>      password!: <span class="kw">string</span>;
+  <span class="dec">@IsString() @IsNotEmpty()</span>      firstName!: <span class="kw">string</span>;
+  <span class="dec">@IsString() @IsNotEmpty()</span>      lastName!: <span class="kw">string</span>;
+}
+
+<span class="cm">// login.dto.ts — only the two fields needed for login</span>
+<span class="kw">export class</span> <span class="cls">LoginDto</span> {
+  <span class="dec">@IsEmail()</span>                     email!: <span class="kw">string</span>;
+  <span class="dec">@IsString() @MinLength(6)</span>      password!: <span class="kw">string</span>;
+}</pre>
+
+    <!-- auth.module -->
+    <div class="card">
+      <div class="card-title"><span class="file-pill">auth.module.ts</span> Auth Feature Module</div>
+      <p>Registers the User repository for injection (<code>forFeature</code>) and sets up the JWT module by reading the secret from <code>.env</code> via <code>ConfigService</code> instead of hardcoding it.</p>
+    </div>
+    <pre>
+<span class="cls">JwtModule</span>.registerAsync({
+  inject: [<span class="cls">ConfigService</span>],
+  useFactory: (config: <span class="cls">ConfigService</span>) => ({
+    secret:      config.<span class="fn">get</span>(<span class="str">'JWT_SECRET'</span>),       <span class="cm">// from .env</span>
+    signOptions: { expiresIn: config.<span class="fn">get</span>(<span class="str">'JWT_EXPIRES_IN'</span>) }, <span class="cm">// '7d'</span>
+  }),
+})</pre>
+
+    <!-- auth.service -->
+    <div class="card green">
+      <div class="card-title"><span class="file-pill green">auth.service.ts</span> Business Logic</div>
+      <p>The core of the application. Contains all logic — no HTTP concerns here, just data operations. The controller stays thin and only delegates to this service.</p>
+    </div>
+    <pre>
+<span class="cm">// REGISTER</span>
+<span class="kw">async</span> <span class="fn">register</span>(dto: <span class="cls">CreateUserDto</span>) {
+  <span class="kw">const</span> existing = <span class="kw">await</span> <span class="kw">this</span>.userRepository.<span class="fn">findOne</span>({ where: { email: dto.email } });
+  <span class="kw">if</span> (existing) <span class="kw">throw new</span> <span class="cls">ConflictException</span>(<span class="str">'Email already in use'</span>); <span class="cm">// → 409</span>
+
+  <span class="kw">const</span> user = <span class="kw">this</span>.userRepository.<span class="fn">create</span>({
+    ...dto,
+    password: bcrypt.<span class="fn">hashSync</span>(dto.password, <span class="num">10</span>), <span class="cm">// plain text → hash</span>
+  });
+  <span class="kw">await</span> <span class="kw">this</span>.userRepository.<span class="fn">save</span>(user);           <span class="cm">// INSERT into MySQL</span>
+  <span class="kw">return</span> { id: user.id, email: user.email, ... }; <span class="cm">// never return password</span>
+}
+
+<span class="cm">// LOGIN</span>
+<span class="kw">async</span> <span class="fn">login</span>(dto: <span class="cls">LoginDto</span>) {
+  <span class="kw">const</span> user = <span class="kw">await</span> <span class="kw">this</span>.userRepository.<span class="fn">findOne</span>({ where: { email: dto.email } });
+  <span class="kw">if</span> (!user || !bcrypt.<span class="fn">compareSync</span>(dto.password, user.password))
+    <span class="kw">throw new</span> <span class="cls">UnauthorizedException</span>(<span class="str">'Invalid credentials'</span>); <span class="cm">// → 401</span>
+
+  <span class="kw">const</span> token = <span class="kw">this</span>.jwtService.<span class="fn">sign</span>({ sub: user.id, email: user.email });
+  <span class="kw">return</span> { token, user: { id: user.id, email: user.email, ... } };
+}</pre>
+
+    <!-- jwt.guard -->
+    <div class="card dark">
+      <div class="card-title"><span class="file-pill">jwt.guard.ts</span> Route Protection</div>
+      <p>Any controller method decorated with <code>@UseGuards(JwtGuard)</code> will be blocked unless the request includes a valid <code>Authorization: Bearer &lt;token&gt;</code> header. The decoded payload is attached to <code>req.user</code> for the controller to use.</p>
+    </div>
+    <pre>
+<span class="fn">canActivate</span>(context): <span class="kw">boolean</span> {
+  <span class="kw">const</span> token = request.headers.authorization?.<span class="fn">split</span>(<span class="str">' '</span>)[<span class="num">1</span>]; <span class="cm">// "Bearer &lt;token&gt;"</span>
+  <span class="kw">if</span> (!token) <span class="kw">throw new</span> <span class="cls">UnauthorizedException</span>(<span class="str">'No token provided'</span>);
+
+  <span class="kw">try</span> {
+    request[<span class="str">'user'</span>] = <span class="kw">this</span>.jwtService.<span class="fn">verify</span>(token, { secret });
+    <span class="kw">return true</span>;                  <span class="cm">// allow request through</span>
+  } <span class="kw">catch</span> {
+    <span class="kw">throw new</span> <span class="cls">UnauthorizedException</span>(<span class="str">'Invalid or expired token'</span>);
+  }
+}</pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 6. FLOW -->
+  <div class="section" id="flow">
+    <h2><span class="h2-num">6</span> Request Flow Diagrams</h2>
+
+    <h3>Registration Flow</h3>
+    <div class="flow-wrap">
+      <div class="flow">
+        <div class="flow-box pink">Client<small>POST /auth/register</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">ValidationPipe<small>checks DTO fields</small></div>
+        <div class="arrow red">→ 400</div>
+        <div class="flow-box red">Bad Request<small>if fields invalid</small></div>
+      </div>
+    </div>
+    <div class="flow-wrap" style="margin-top:8px">
+      <div class="flow">
+        <div class="flow-box">ValidationPipe<small>passes</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">AuthService<small>duplicate check</small></div>
+        <div class="arrow red">→ 409</div>
+        <div class="flow-box red">Conflict<small>email exists</small></div>
+      </div>
+    </div>
+    <div class="flow-wrap" style="margin-top:8px">
+      <div class="flow">
+        <div class="flow-box">AuthService<small>new email</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">bcrypt.hashSync<small>hashes password</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">repository.save<small>INSERT into MySQL</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box green">201 Created<small>user (no password)</small></div>
+      </div>
+    </div>
+
+    <h3>Login Flow</h3>
+    <div class="flow-wrap">
+      <div class="flow">
+        <div class="flow-box pink">Client<small>POST /auth/login</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">AuthService<small>findOne by email</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">bcrypt.compareSync<small>verify password</small></div>
+        <div class="arrow red">→ 401</div>
+        <div class="flow-box red">Unauthorized<small>wrong credentials</small></div>
+      </div>
+    </div>
+    <div class="flow-wrap" style="margin-top:8px">
+      <div class="flow">
+        <div class="flow-box">bcrypt.compareSync<small>match</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">jwtService.sign<small>{ sub, email }</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box green">200 OK<small>token + user</small></div>
+      </div>
+    </div>
+
+    <h3>Protected Route Flow</h3>
+    <div class="flow-wrap">
+      <div class="flow">
+        <div class="flow-box pink">Client<small>GET /auth/me + Bearer token</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">JwtGuard<small>extracts token</small></div>
+        <div class="arrow red">→ 401</div>
+        <div class="flow-box red">Unauthorized<small>missing / invalid</small></div>
+      </div>
+    </div>
+    <div class="flow-wrap" style="margin-top:8px">
+      <div class="flow">
+        <div class="flow-box">JwtGuard<small>verify() passes</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">req.user set<small>decoded payload</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box">Controller<small>receives request</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-box green">200 OK<small>{ sub, email }</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 7. ENDPOINTS -->
+  <div class="section" id="endpoints">
+    <h2><span class="h2-num">7</span> API Endpoints</h2>
+
+    <table>
+      <tr><th>Endpoint</th><th>Request Body</th><th>Auth Required</th><th>Success</th><th>Errors</th></tr>
+      <tr>
+        <td><span class="method post">POST</span><code>/auth/register</code></td>
+        <td><code>email, password, firstName, lastName</code></td>
+        <td>None</td>
+        <td>201 — user object</td>
+        <td>400 invalid body, 409 duplicate email</td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span><code>/auth/login</code></td>
+        <td><code>email, password</code></td>
+        <td>None</td>
+        <td>200 — JWT token + user</td>
+        <td>400 invalid body, 401 wrong credentials</td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span><code>/auth/me</code></td>
+        <td>None</td>
+        <td><code>Authorization: Bearer &lt;token&gt;</code></td>
+        <td>200 — decoded JWT payload</td>
+        <td>401 no/invalid token</td>
+      </tr>
+    </table>
+
+    <h3>Example: Register</h3>
+    <pre>
+<span class="cm">// Request</span>
+<span class="cls">POST</span> /auth/register
+Content-Type: application/json
+
+{
+  <span class="str">"email"</span>:     <span class="str">"jane@example.com"</span>,
+  <span class="str">"password"</span>:  <span class="str">"secret123"</span>,
+  <span class="str">"firstName"</span>: <span class="str">"Jane"</span>,
+  <span class="str">"lastName"</span>:  <span class="str">"Doe"</span>
+}
+
+<span class="cm">// Response 201</span>
+{
+  <span class="str">"message"</span>: <span class="str">"User registered successfully"</span>,
+  <span class="str">"user"</span>: { <span class="str">"id"</span>: <span class="num">1</span>, <span class="str">"email"</span>: <span class="str">"jane@example.com"</span>, <span class="str">"firstName"</span>: <span class="str">"Jane"</span>, <span class="str">"lastName"</span>: <span class="str">"Doe"</span> }
+}</pre>
+
+    <h3>Example: Login</h3>
+    <pre>
+<span class="cm">// Request</span>
+<span class="cls">POST</span> /auth/login
+{ <span class="str">"email"</span>: <span class="str">"jane@example.com"</span>, <span class="str">"password"</span>: <span class="str">"secret123"</span> }
+
+<span class="cm">// Response 200</span>
+{
+  <span class="str">"message"</span>: <span class="str">"Login successful"</span>,
+  <span class="str">"token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOjEsImVtYWlsIjoiamFuZUBleGFtcGxlLmNvbSJ9.xxx"</span>,
+  <span class="str">"user"</span>: { <span class="str">"id"</span>: <span class="num">1</span>, <span class="str">"email"</span>: <span class="str">"jane@example.com"</span>, ... }
+}</pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 8. SECURITY -->
+  <div class="section" id="security">
+    <h2><span class="h2-num">8</span> Security Practices Applied</h2>
+
+    <table>
+      <tr><th>Practice</th><th>How it is implemented</th></tr>
+      <tr>
+        <td><strong>No plain-text passwords</strong></td>
+        <td>bcrypt hashes the password before storing. Even if the database is leaked, passwords cannot be reversed.</td>
+      </tr>
+      <tr>
+        <td><strong>Password never returned</strong></td>
+        <td>The service manually selects which fields to return. The <code>password</code> field is always omitted from responses.</td>
+      </tr>
+      <tr>
+        <td><strong>Vague login errors</strong></td>
+        <td>Login always returns <em>"Invalid credentials"</em> — never "email not found" or "wrong password" separately, which would let attackers enumerate accounts.</td>
+      </tr>
+      <tr>
+        <td><strong>DTO whitelist</strong></td>
+        <td><code>whitelist: true</code> in <code>ValidationPipe</code> strips any extra fields the client sends, preventing property injection attacks.</td>
+      </tr>
+      <tr>
+        <td><strong>Secrets in .env</strong></td>
+        <td>The JWT secret is never in source code. It lives in <code>.env</code> which is excluded from git via <code>.gitignore</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>JWT expiry</strong></td>
+        <td>Tokens expire after 7 days (<code>JWT_EXPIRES_IN=7d</code>). An attacker who obtains a token cannot use it forever.</td>
+      </tr>
+      <tr>
+        <td><strong>DB-level uniqueness</strong></td>
+        <td><code>unique: true</code> on the email column is enforced by MySQL itself, not only by application code.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ 9. NEXT STEPS -->
+  <div class="section" id="next">
+    <h2><span class="h2-num">9</span> What Could Be Next</h2>
+
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h4>Frontend — React + Vite</h4>
+          <p>Scaffold the <code>frontend/</code> folder with React. Build a Register page and Login page. Store the JWT in <code>localStorage</code>. Send it with every API request as <code>Authorization: Bearer &lt;token&gt;</code>. Enable CORS on the backend first (<code>app.enableCors()</code>).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Move DB Credentials to .env</h4>
+          <p>MySQL host, username, and password are currently hardcoded in <code>app.module.ts</code>. Move them to <code>.env</code> and read via <code>ConfigService</code> — the same pattern used for the JWT secret.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>TypeORM Migrations</h4>
+          <p>Replace <code>synchronize: true</code> with migration files for production. Migrations give full control over schema changes without risking data loss on a live server.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h4>Refresh Tokens</h4>
+          <p>Short-lived access tokens (15 min) + a long-lived refresh token stored in the DB. When the access token expires, the client exchanges the refresh token for a new one without logging in again.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <h4>Swagger / OpenAPI Documentation</h4>
+          <p>Install <code>@nestjs/swagger</code> to auto-generate interactive API docs at <code>/api</code>. Useful for testing endpoints without needing Postman.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div>
+          <h4>Rate Limiting</h4>
+          <p>Install <code>@nestjs/throttler</code> to limit login attempts per IP (e.g. 5 per minute). Prevents brute-force attacks on the login endpoint.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">7</div>
+        <div>
+          <h4>Role-Based Access Control (RBAC)</h4>
+          <p>Add a <code>role</code> column to the User entity (<code>admin</code> / <code>user</code>). Create a <code>RolesGuard</code> that checks <code>req.user.role</code> against a <code>@Roles('admin')</code> decorator on routes.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight" style="margin-top: 32px;">
+      <strong>Summary of what is fully working right now:</strong>
+      <br><br>
+      ✅ User registers → password hashed → saved to MySQL<br>
+      ✅ User logs in → credentials verified → JWT issued<br>
+      ✅ Protected routes blocked without a valid token<br>
+      ✅ Secrets stored in <code>.env</code>, not in source code<br>
+      ✅ DTO validation rejects malformed requests automatically<br>
+      ✅ Data persists across server restarts<br>
+      ✅ Password is never returned in any API response
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  NestJS Authentication API &nbsp;·&nbsp; Project Discussion Document &nbsp;·&nbsp; Cities Project
+</footer>
+
+</body>
+</html>
